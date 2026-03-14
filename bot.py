@@ -21,6 +21,34 @@ from plugins import web_server, check_expired_premium
 from LucyBot.Bot import Codeflix
 from LucyBot.util.keepalive import ping_server
 from LucyBot.Bot.clients import initialize_clients
+from aiohttp import web
+import asyncio
+
+# 1. Create a simple health check handler
+async def health_check(request):
+    return web.Response(text="I am alive and running!")
+
+async def start_server():
+    app = web.Application()
+    app.router.add_get("/", health_check)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    # Use the PORT from your env or default to 8080
+    site = web.TCPSite(runner, "0.0.0.0", int(environ.get("PORT", 8080)))
+    await site.start()
+    print("Keep-alive server started!")
+
+# 3. Update your main Lucy_start function
+async def Lucy_start():
+    # Start the web server in the background
+    await start_server()
+    
+    # Now start your bot
+    try:
+        await Codeflix.start()
+        print("Bot started successfully!")
+    except Exception as e:
+        print(f"Error: {e}")
 
 logging.config.fileConfig('logging.conf')
 logging.getLogger().setLevel(logging.INFO)
